@@ -5,6 +5,11 @@ from world import World
 import random
 from ast import literal_eval
 
+import sys
+
+sys.path.append("./graph")
+from util import Stack, Queue
+
 # Load world
 world = World()
 
@@ -21,23 +26,38 @@ room_graph = literal_eval(open(map_file, "r").read())
 world.load_graph(room_graph)
 
 # Print an ASCII map
-world.print_rooms()
+# world.print_rooms()
 
 player = Player(world.starting_room)
 
 # Fill this out with directions to walk
 # traversal_path = ['n', 'n']
-traversal_path = ["n", "e", "s", "w"]
+traversal_path = []
+# opposite_directions = {"n": "s", "e": "w", "s": "n", "w": "e"}
 
 
-def random_heading():
-    return random.choice(traversal_path)
+def search():
+    explored_rooms = {}
+    stack = Stack()
+    stack.push([starting_vertex])
+    visited = set()
+    while stack.size() > 0:
+        path = stack.pop()
+        vertex = path[-1]
+        if vertex not in visited:
+            if vertex == destination_vertex:
+                return path
+            # print(vertex)
+            visited.add(vertex)
+            for next_vert in self.get_neighbors(vertex):
+                new_path = list(path)
+                new_path.append(next_vert)
+                stack.push(new_path)
 
 
 # TRAVERSAL TEST
-visited_rooms = set()
-player.current_room = world.starting_room
-visited_rooms.add(player.current_room)
+search()
+
 
 for move in traversal_path:
     player.travel(move)
