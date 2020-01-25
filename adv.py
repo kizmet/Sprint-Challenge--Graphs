@@ -33,31 +33,60 @@ player = Player(world.starting_room)
 # Fill this out with directions to walk
 # traversal_path = ['n', 'n']
 traversal_path = []
-# opposite_directions = {"n": "s", "e": "w", "s": "n", "w": "e"}
+directions = ["n", "e", "s", "w"]
+opposite_directions = {"n": "s", "e": "w", "s": "n", "w": "e"}
+
+# graph the rooms visited and their exits
+visited_rooms_graph = {}
+# all the room Id's that have been visited
+visited_rooms_track = set()
+
+# add the current room to the visited rooms graph
+# create directions objects "n:?,s:?"
+# add to visited rooms set
+def add_to_visited_rooms(visited_rooms_graph, current_room):
+    if current_room.id not in visited_rooms_graph:
+        exits = current_room.get_exits()
+        current_exits = visited_rooms_graph[current_room.id] = {exit: "?" for exit in exits}
+        visited_rooms_track.add(current_room.id)
+        return current_exits
 
 
-def search():
-    explored_rooms = {}
-    stack = Stack()
-    stack.push([starting_vertex])
-    visited = set()
-    while stack.size() > 0:
-        path = stack.pop()
-        vertex = path[-1]
-        if vertex not in visited:
-            if vertex == destination_vertex:
-                return path
-            # print(vertex)
-            visited.add(vertex)
-            for next_vert in self.get_neighbors(vertex):
-                new_path = list(path)
-                new_path.append(next_vert)
-                stack.push(new_path)
+# >>> visited_rooms_graph
+# {0: {'n': '?'}}
+
+
+# loop through the rooms until all visited
+while len(visited_rooms_graph) < len(room_graph):
+    if player.current_room.id not in visited_rooms_track:
+        # add room to graph and set if not already there
+        current_exits = add_to_visited_rooms(visited_rooms_graph, player.current_room)
+    # find new/unexplored exits
+    exits = player.current_room.get_exits()
+    unexplored_exits = [e for e in exits if visited_rooms_graph[player.current_room.id][e] == "?"]
+
+    # if there are unexplored exits add it to the q
+    if len(unexplored_exits) > 0:
+        next_move = random.choice(unexplored_exits)
+    # if all exits are explored, last room in visited rooms (go back to it)
+    elif len(visited_rooms_track) > 0:
+        # visited_rooms.add(visited_rooms)
+        next_move = visited_rooms_track.pop()
+
+    # go to next room
+    prev_room = player.current_room
+    traversal_path.append(next_move)
+    player.travel(next_move)
+
+    if player.current_room.id not in visited_rooms_track:
+        # add room to graph and set if not already there
+        add_to_visited_rooms(visited_rooms_graph, player.current_room)
 
 
 # TRAVERSAL TEST
-search()
-
+visited_rooms = set()
+player.current_room = world.starting_room
+visited_rooms.add(player.current_room)
 
 for move in traversal_path:
     player.travel(move)
