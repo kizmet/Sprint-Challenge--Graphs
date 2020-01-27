@@ -4,11 +4,11 @@ from world import World
 
 import random
 from ast import literal_eval
-
 import sys
 
 sys.path.append("./graph")
 from util import Stack, Queue
+
 
 # Load world
 world = World()
@@ -52,36 +52,84 @@ def add_to_visited_rooms(visited_rooms_graph, current_room):
         return current_exits
 
 
-# >>> visited_rooms_graph
-# {0: {'n': '?'}}
+def new_path(visited_rooms_graph, current_room):
+    queue = Queue()
+    queue.enqueue([(current_room.id, None)])
+    visited = set()
+    while queue.size() > 0:
+        path = queue.dequeue()
+        # print("current_path", path)
+        vertex = path[-1]
+        # print("current_room", vertex)
+        room = vertex[0]
+        # print("current_room_id:", room)
+        if room not in visited:
+            # print(vertex)
+            visited.add(room)
+            # loop through exits
+            exits = visited_rooms_graph[room]
+            # print("exits:", exits)
+            for e in exits:
+                # if unvisited exit, return path
+                if exits[e] == "?":
+                    new_path = path.copy()
+                    # print("exits[e]", exits[e])
+                    new_path.append((exits[e], e))
+                    # print("new_path", new_path)
+                    d_path = [p[1] for p in new_path[1:]]
+                    # print("d_path", d_path)
+                    travel_path = Queue()
+                    travel_path.enqueue([d_path][-1])
+                    # for d in d_path:
+                    #     travel_path.enqueue([d])
+                    # travel_path = queue.enqueue(d_path)
+                    print("travel_path", travel_path.queue)
+                    return travel_path
+                else:
+                    new_path = list(path)
+                    new_path.append((exits[e], e))
+                    queue.enqueue(new_path)
 
 
+# setup queue for traversal
+travel_path = Queue()
 # loop through the rooms until all visited
 while len(visited_rooms_graph) < len(room_graph):
-    if player.current_room.id not in visited_rooms_track:
+    current_room = player.current_room
+    current_exits = current_room.get_exits()
+    if current_room.id not in visited_rooms_graph:
         # add room to graph and set if not already there
-        current_exits = add_to_visited_rooms(visited_rooms_graph, player.current_room)
+        visited_rooms_graph[current_room.id] = {e: "?" for e in current_exits}
     # find new/unexplored exits
-    exits = player.current_room.get_exits()
-    unexplored_exits = [e for e in exits if visited_rooms_graph[player.current_room.id][e] == "?"]
+    unexplored_exits = [e for e in current_exits if visited_rooms_graph[player.current_room.id][e] == "?"]
 
     # if there are unexplored exits add it to the q
     if len(unexplored_exits) > 0:
         next_move = random.choice(unexplored_exits)
-    # if all exits are explored, last room in visited rooms (go back to it)
-    elif len(visited_rooms_track) > 0:
-        # visited_rooms.add(visited_rooms)
-        next_move = visited_rooms_track.pop()
+    # if all exits are explored, find a new room
+    else:
+        travel_path = new_path(visited_rooms_graph, current_room)
+        next_move = travel_path.dequeue()
+        next_move = next_move[0]
 
     # go to next room
-    prev_room = player.current_room
+    previous_room = current_room
     traversal_path.append(next_move)
     player.travel(next_move)
-
+    current_room = player.current_room
     if player.current_room.id not in visited_rooms_track:
         # add room to graph and set if not already there
         add_to_visited_rooms(visited_rooms_graph, player.current_room)
 
+    if current_room.id not in visited_rooms_graph:
+        current_exits = current_room.get_exits()
+        visited_rooms_graph[current_room.id] = {e: "?" for e in current_exits}
+    # set the direction in graph
+    visited_rooms_graph[previous_room.id][next_move] = current_room.id
+    # print("line120", visited_rooms_graph[current_room.id])
+    visited_rooms_graph[current_room.id][opposite_directions[next_move]] = previous_room.id
+
+    # connections = current_room.connect_rooms(next_move, previous_room.id)
 
 # TRAVERSAL TEST
 visited_rooms = set()
